@@ -1,7 +1,7 @@
 # 别拿单机玩具忽悠企业：Agent 的“CLI 革命”为什么是个伪命题？
 
 **Date**: 2026-04-06
-**Author**: Limina Labs (RedMogu Engineering)
+**Author**: Limina Labs (Limina Engineering)
 
 最近，一篇宣称《四家平台同时给Agent开了CLI‘后门’》的营销文在圈内刷屏。文章宣称，飞书、钉钉等平台开放的 CLI（命令行接口）标志着“执行层革命”，只要让大模型去敲命令行，企业自动化的春风就吹进了千家万户。
 
