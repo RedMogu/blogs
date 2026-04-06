@@ -1,4 +1,61 @@
-# 别拿单机玩具忽悠企业：Agent 的“CLI 革命”为什么是个伪命题？
+[🇨🇳 中文版本](#🇨🇳-中文版本-别拿单机玩具忽悠企业agent-的cli-革命为什么是个伪命题) | [🇬🇧 English Version](#🇬🇧-english-version-stop-peddling-single-player-toys-to-enterprises-why-the-agent-cli-revolution-is-a-dangerous-illusion)
+
+---
+
+# 🇬🇧 English Version: Stop Peddling Single-Player Toys to Enterprises: Why the Agent "CLI Revolution" is a Dangerous Illusion
+
+**Date**: 2026-04-06
+**Author**: Limina Labs (Limina Engineering)
+
+Recently, an article claiming that "four major platforms have simultaneously opened CLI backdoors for Agents" went viral. The piece argued that the release of Command Line Interfaces (CLIs) by platforms like Feishu and DingTalk marks an "execution layer revolution." Simply point an LLM at a CLI, and enterprise automation will magically blossom.
+
+This kind of narrative oozes **"academic elegance,"** and sounds incredibly sexy. But to any battle-tested architect who has survived production environments, looking at this design brings only one word to mind: **Toy.**
+
+Let's strip away the marketing hype of this "CLI Revolution" and discuss why throwing a native CLI executable at an LLM in an enterprise (B2B) multi-tenant scenario doesn't solve the problem—it creates a ticking time bomb of data breaches.
+
+---
+
+## 1. The Token-Burning Abyss and "Cascading Hallucinations"
+
+In the ideal demo, you tell the Agent, "check yesterday's data." The Agent brilliantly parses the CLI schema, autonomously decides which commands to run, and delivers perfectly through iterative ReAct reasoning.
+
+In engineering reality, **90% of tokens and latency are completely wasted on "letting the LLM guess how to use the tool on the fly."**
+Throwing a highly flexible, generalized CLI at a smaller model (like a local lightweight LLM) is like putting a monkey in the cockpit of a Boeing 747. Once the LLM hallucinates (e.g., missing a parameter, or generating malformed query syntax), it triggers either an endless `HTTP 400 Bad Request` death loop, or worse, executes unintended destructive commands.
+
+Even more fatal are **Cascading Failures**. Once an LLM executes a flawed query based on a hallucination and writes that bad data back into the system, the pollution amplifies rapidly across the automation chain. Relying on an LLM to "autonomously emerge" reliable complex business workflows over an open CLI is extreme negligence toward engineering stability.
+
+**The Realistic Solution:** True production-grade workflows must be locked down by **LangGraph orchestration or rigid SOPs** forming hardcoded DAGs (Directed Acyclic Graphs). The LLM is only permitted to perform "unstructured data extraction and transformation" within specific, isolated nodes. It must never be given boundless control over the underlying orchestration.
+
+## 2. Fatal Permission Design: "State Pollution" in Multi-Tenant Environments
+
+This is the Achilles' heel of the "CLI Revolution" that amateurs ignore: **These official CLI tools are fundamentally built with a "Single-Player" DNA.**
+
+Think about it. An executable like `lark-cli` or `dingtalk-cli` usually relies on global configuration files (like `~/.lark-cli-config`) or global environment variables for authentication. 
+If you use this as the Agent's foundation in a 50-person enterprise group chat, and Employee A and Employee B ask the Agent to query confidential projects simultaneously... **Whose identity is the Agent actually using?**
+
+If the Agent naively uses a global Admin Token built into the system, permission boundaries instantly collapse, resulting in a massive data breach. If you try to dynamically rewrite environment variables during high-concurrency calls to switch the CLI's token, you will inevitably trigger multi-threading state pollution (Race Conditions).
+
+**Any Agent toolchain lacking a Multi-Tenant dynamic authentication isolation mechanism is just a toy.**
+
+## 3. The Limina Reality: Native Plugins & Identity Gateways
+
+So, how should enterprise-grade Agents actually be built? In the underlying architectural design of CoreOS/OpenClaw, we completely discarded the lazy approach of "letting LLMs call external CLI executables." Instead, we pivoted to an enterprise-grade path: **Native OAPI Tools + Identity & Policy Gateway.**
+
+A true enterprise architecture looks like this:
+
+1. **Complete Decoupling of Token Management**: All operational tools must be hardcoded at the lowest gateway level (native functions). When the LLM calls a tool, **it never touches any real API tokens**; it only passes business parameters.
+2. **Context-Based Dynamic Identity Routing**: When the LLM says "I want to create a task for John," the underlying daemon intercepts the `SenderId` from the current message context. Through an internal Auth Store dynamic mapping, it injects John's OAuth User Access Token at the very last millisecond before the HTTP request is fired. User contexts remain physically isolated.
+3. **Physical Approval Hooks**: For any privilege escalation or high-risk write operations, the gateway forcibly suspends the request at the base layer and pushes a confirmation card (Approve/Deny) to the physical human's device, mechanically blocking any "hallucination rampages" from the LLM.
+
+## Conclusion
+
+The notion that "letting LLMs call CLIs is a revolution" is nothing more than single-player roleplay, born from immature underlying identity and permission infrastructure.
+
+It's time to abandon the blind worship of autonomous LLM reasoning. Without hardcoded LangGraph flows locking down the process, and without rock-solid multi-tenant dynamic authentication gateways, any "execution layer revolution" is a castle in the air. Real enterprise AI lives in the boring world of permission isolation, concurrency control, and strict state machine management.
+
+---
+
+# 🇨🇳 中文版本: 别拿单机玩具忽悠企业：Agent 的“CLI 革命”为什么是个伪命题？
 
 **Date**: 2026-04-06
 **Author**: Limina Labs (Limina Engineering)
@@ -33,7 +90,7 @@
 
 **没有多租户（Multi-Tenant）动态鉴权隔离机制的 Agent 工具链，全都是玩具。**
 
-## 3. The RedMogu Reality：原生插件与鉴权网关
+## 3. The Limina Reality：原生插件与鉴权网关
 
 那么，企业级 Agent 到底该怎么做？在 CoreOS/OpenClaw 的底层架构设计中，我们彻底抛弃了“让大模型调外部 CLI 可执行文件”这种偷懒的做法，转向了 **Native OAPI Tools + 身份与策略网关（Identity & Policy Gateway）** 的企业级路线。
 

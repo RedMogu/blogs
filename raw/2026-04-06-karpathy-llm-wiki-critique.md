@@ -1,4 +1,55 @@
-# 扯下大神的光环：Karpathy 的 LLM-Wiki 为什么是个 O(N²) 的工程灾难？
+[🇨🇳 中文版本](#🇨🇳-中文版本-扯下大神的光环karpathy-的-llm-wiki-为什么是个-on²-的工程灾难) | [🇬🇧 English Version](#🇬🇧-english-version-stripping-the-halo-why-karpathys-llm-wiki-is-an-on²-engineering-disaster)
+
+---
+
+# 🇬🇧 English Version: Stripping the Halo: Why Karpathy's LLM-Wiki is an O(N²) Engineering Disaster
+
+**Date**: 2026-04-06
+**Author**: Limina Labs (Limina Engineering)
+
+Recently, Andrej Karpathy shared his approach to building an autonomous personal knowledge base (LLM-Wiki) using LLMs on Twitter. Within days, millions of followers were worshipping it as if they had found the ultimate holy grail of knowledge management in the AI era.
+
+His core logic is very "elegant": carelessly dump all fragmented notes and articles into a `raw/` folder, then use an LLM on a cron schedule to scan, extract, summarize, and link everything into a `wiki/` directory entirely autonomously.
+
+This approach reeks of **"academic elegance,"** but to any senior architect who has been bruised by real-world production environments, it fails against **"production reality."** If an enterprise or heavy AI developer were to actually adopt this architecture, they would be marching straight into a terrifying engineering disaster.
+
+## 1. O(N²) Token Burning and the Compute Black Hole
+
+The original sin of the LLM-Wiki pattern is that it violates the most fundamental common sense of computer science—system complexity.
+When your knowledge base has only 10 articles, having an LLM read everything globally and rebuild the network graph (bidirectional links, entity alignment) takes perhaps a few tens of thousands of tokens. It might even look brilliantly intelligent.
+But what happens when your knowledge base grows to 1,000 or 10,000 articles? Every time a tiny new piece of knowledge is added, in order to find correlations and guarantee global consistency, the LLM theoretically needs to perform an O(N²) level recalculation and alignment against the massive knowledge graph.
+
+This is not knowledge management; this is a charity donation to big tech API revenues. This boundless method of token consumption is absolutely unacceptable in an ROI-driven engineering production environment.
+
+## 2. Cascading Failures and Hallucination Pollution
+
+This mechanism also naively assumes a premise: "LLMs are perfect summarizers."
+In reality, the moment an LLM hallucinates during a scheduled merge (for example, confusing two similarly named concepts), this error becomes hardcoded into the `wiki/` file system. In the next automated update, the model will use this contaminated Wiki to generate new conclusions.
+
+This creates fatal **Cascading Failures**.
+Fully autonomous rewriting, lacking human intervention and strong state isolation, allows dirty data to spread like a cancer throughout the entire knowledge base. Once this happens, the credibility of the entire knowledge system drops to zero instantly, and rollback is nearly impossible.
+
+## 3. Limina's Pragmatic Solution: Async Dual-Core and JIT Injection
+
+Rather than using expensive LLMs to run an endless black hole of global updates, we should return to the unglamorous essence of engineering. At Limina Engineering, our architectural design for complex system knowledge management is:
+
+**First: Cold/Hot Separation and JIT (Just-In-Time) Retrieval.**
+The vast majority of daily cold data does not need to be rewritten by an LLM at all. We simply use lightweight retrieval engines (like `qmd` / `mem-search`) to fetch snippets on-demand and at lightning speed during a query. Meanwhile, the truly high-frequency core system context is maintained in a minimalist `MEMORY.md` (hot context). This is not only rock-solid but almost zero cost.
+
+**Second: Async Dual-Core Pipeline.**
+We physically sever "data ingestion" from "knowledge synthesis":
+- **Step 1 (Fetch & Archive)**: We use extremely lightweight, low-intelligence models (like a locally deployed oMLX Qwen) paired with browser automation tools to cleanly scrape external web pages and drop them into the `raw/` directory. This step only transports data; it burns no premium tokens.
+- **Step 2 (Wiki-Builder)**: Only when the user explicitly needs a deep dive into a specific topic do we manually trigger a strictly orchestrated Workflow via **LangGraph**. We summon high-intelligence models (like Claude 3.5 Sonnet) for conflict resolution, cleaning, and summarization, before writing to the final `wiki/` directory.
+
+## Conclusion
+
+God-tier academics in the AI world are accustomed to unlimited compute budgets and idealized lab environments. But the core of engineering is about **boundaries, control, and ROI**.
+
+Blindly chasing "fully autonomous O(N²) LLM updates" is not only architectural laziness but an ignorance of engineering common sense. Delegate the dirty scraping work to cheap scripts, hand the brain-burning synthesis to premium LLMs, and keep the power to press the "Run" button firmly in the hands of the human architect—this is the ultimate truth of bringing AI to production.
+
+---
+
+# 🇨🇳 中文版本: 扯下大神的光环：Karpathy 的 LLM-Wiki 为什么是个 O(N²) 的工程灾难？
 
 **Date**: 2026-04-06
 **Author**: Limina Labs (Limina Engineering)
