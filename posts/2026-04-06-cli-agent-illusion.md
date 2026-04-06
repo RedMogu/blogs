@@ -1,87 +1,86 @@
-[🇨🇳 中文版本](#🇨🇳-中文版本-别拿单机玩具忽悠企业agent-的cli-革命是个伪命题) | [🇬🇧 English Version](#🇬🇧-english-version-stop-peddling-single-player-toys-to-enterprises-the-agent-cli-revolution-is-a-joke)
+---
+title: 别拿单机玩具忽悠企业：CLI Agent 是个伪命题 / Stop Peddling Toys to Enterprises
+date: 2026-04-06
+excerpt: 丢个 CLI 给大模型就吹执行层革命？缺乏多租户隔离与 DAG 强干预的系统，只是个随时触发数据泄露的单机玩具。 / Exposing CLIs to LLMs isn't an execution revolution. Without multi-tenant isolation and hardcoded DAGs, it's a data breach waiting to happen.
+tags: [Architecture, LLMs, Enterprise, Security]
+---
+
+[🇨🇳 中文版本](#🇨🇳-中文版本-别拿单机玩具忽悠企业cli-agent-是个伪命题) | [🇬🇧 English Version](#🇬🇧-english-version-stop-peddling-toys-to-enterprises-why-cli-agents-are-a-dangerous-illusion)
 
 ---
 
-# 🇬🇧 English Version: Stop Peddling Single-Player Toys to Enterprises: The Agent "CLI Revolution" is a Joke
+# 🇨🇳 中文版本: 别拿单机玩具忽悠企业：CLI Agent 是个伪命题
 
-**Date**: 2026-04-06
-**Author**: Limina Labs (Limina Engineering)
+宣称平台开放 CLI 是 Agent“执行层革命”的论调，纯属缺乏工程常识的学术意淫。将原生 CLI 执行文件直接暴露给大模型，在 ToB 多租户场景下不仅无效，且必然引发越权灾难。这不是革命，这是玩具。
 
-An article hyping "four major platforms opening CLI backdoors for Agents" recently circulated, claiming CLIs from Feishu and DingTalk mark an "execution layer revolution." The premise: point an LLM at a CLI and enterprise automation is solved.
+剥去营销话术，我们从架构层面拆解这个设计的致命缺陷。
 
-This is marketing garbage. To anyone who has survived a production environment, this design is a toy.
+## 1. Token 损耗与故障级联 (Cascading Failures)
 
-Throwing a native CLI executable at an LLM in a B2B multi-tenant environment does not solve problems. It creates data breaches. Here is why.
+Demo 里的 Agent 靠 ReAct 完美调用 CLI；生产环境中，90% 的 Token 和算力被白白耗费在“让模型猜测参数格式”上。
+
+把高自由度的泛化 CLI 扔给 LLM，参数幻觉会立即触发无尽的 `HTTP 400 Bad Request` 死循环，或直接执行意料之外的破坏性写入。脏数据一旦落库，污染将在自动化链条中呈指数级放大。指望大模型在开放 CLI 上动态生成并维稳复杂业务流，是极端的工程怠惰。
+
+**工程解法**：生产级工作流必须被 LangGraph 或 SOP 固化为硬编码的 DAG（有向无环图）。大模型的权限必须被物理禁锢在特定节点内进行非结构化数据解析，绝对禁止其越权接管底层系统编排。
+
+## 2. 多租户并发下的状态污染
+
+大厂官方 CLI 的底层基因是“单机单用户（Single-Player）”。此类执行文件高度依赖本地全局配置（如 `~/.lark-cli-config`）或进程环境变量进行鉴权。
+
+将单机 CLI 塞进 50 人企业群的 Agent 引擎中，当多租户并发请求涉密数据时：
+若默认使用全局 Admin Token，系统安全边界瞬间崩塌，直接导致数据越权泄露；若企图在高并发下动态覆写环境变量来切换 Token，必遭多线程资源竞争（Race Conditions）毒打。
+
+没有多租户动态鉴权隔离机制的工具链，毫无讨论价值。
+
+## 3. 生产级架构：原生插件与身份策略网关
+
+在 CoreOS/OpenClaw 的底层设计中，我们彻底废弃了“LLM 调用 CLI”的业余方案，采用 Native OAPI Tools 配合身份策略网关（Identity & Policy Gateway）。
+
+架构强制规范如下：
+
+1. **Token 物理剥离**：工具逻辑在底层网关硬编码。大模型只负责生成业务参数，物理层面上绝对禁止其接触任何真实 API Token。
+2. **动态身份路由**：守护进程通过消息上下文截获 `SenderId`。发起 HTTP 请求前最后一毫秒，Auth Store 实时拦截并注入该真实用户的 OAuth Token。上下文请求物理级隔离。
+3. **强干预审批锁 (Approval Hooks)**：涉及越权或写操作，网关必须在底层强行阻断请求，向物理人设备推送 Approve/Deny 卡片。用机械锁切断模型幻觉。
+
+## 结论
+
+盲目崇拜 LLM 自主推理是低级架构设计的体现。没有 DAG 流程锁死，没有多租户鉴权网关，任何“执行层革命”都是空谈。企业级 AI 的真相活在枯燥的权限隔离、并发控制和严密的状态机收敛中，绝不是陪大模型玩命令行过家家。
+
+---
+
+# 🇬🇧 English Version: Stop Peddling Toys to Enterprises: Why CLI Agents are a Dangerous Illusion
+
+The narrative claiming that exposing CLIs (like Feishu or DingTalk) to Agents marks an "execution layer revolution" is sheer academic delusion. To any architect running actual production systems, a CLI-driven Agent in a B2B multi-tenant environment is not a breakthrough; it is a ticking data breach.
+
+Let's strip away the hype and examine the fatal architectural flaws of this design.
 
 ## 1. Token Waste and Cascading Failures
 
-Demos show Agents gracefully parsing CLI schemas and executing commands via ReAct. Reality is different: 90% of tokens and latency are wasted on the LLM guessing how to use the CLI. 
+In pristine demos, Agents parse CLI schemas and execute workflows flawlessly. In engineering reality, 90% of tokens and latency are wasted on the LLM blindly guessing tool syntax.
 
-Throwing a generalized CLI at an LLM guarantees hallucinated parameters and malformed syntax. This triggers endless `HTTP 400 Bad Request` loops or unintended destructive executions. 
+Handing a highly flexible, generalized CLI to an LLM is architectural negligence. A single hallucinated parameter immediately triggers `HTTP 400 Bad Request` death loops or unintended destructive writes. Once polluted data enters the system, the fallout amplifies downstream instantly (Cascading Failures). Expecting LLMs to autonomously stabilize complex business logic over an open CLI is reckless.
 
-Cascading failures follow. Once an LLM writes hallucinated data back to the system, corruption amplifies across the automation chain. Relying on an open CLI for complex business logic is engineering negligence.
-
-**The Fix:** Production workflows require hardcoded DAGs via LangGraph or rigid SOPs. The LLM only handles unstructured data extraction within isolated nodes. It gets zero control over orchestration.
+**The Engineering Standard**: Production-grade workflows must be locked down into hardcoded DAGs (Directed Acyclic Graphs) via LangGraph orchestration or rigid SOPs. The LLM is confined strictly to isolated nodes for unstructured data transformation. It must never be granted unbound control over system orchestration.
 
 ## 2. Multi-Tenant State Pollution
 
-CLI tools are built for single-player use. Executables like `lark-cli` rely on global configs (`~/.lark-cli-config`) or global environment variables. 
+CLIs are fundamentally built with a "Single-Player" DNA. Executables like `lark-cli` rely on global config files (e.g., `~/.lark-cli-config`) or global environment variables for authentication.
 
-Drop this into a 50-person enterprise chat. User A and User B query separate confidential projects simultaneously. Whose identity does the Agent use?
+Deploy this in a 50-person enterprise group chat Agent, and watch it break under concurrency. When multiple users query restricted data simultaneously: 
+If the Agent uses a global Admin token, permission boundaries collapse, resulting in immediate data exfiltration. If you attempt to dynamically rewrite environment variables during high-concurrency calls to switch context, you guarantee fatal Race Conditions.
 
-Using a global Admin Token causes immediate data breaches. Dynamically rewriting environment variables during high concurrency causes race conditions and state pollution. Any Agent toolchain lacking dynamic, per-request multi-tenant auth isolation is a toy.
+Any Agent toolchain lacking a robust, multi-tenant dynamic authentication isolation mechanism is a toy.
 
-## 3. Native Tools & Identity Gateways
+## 3. Production Architecture: Native Plugins & Identity Gateways
 
-At Limina Labs, the CoreOS/OpenClaw architecture discards the "LLM calling CLI" anti-pattern. We use Native OAPI Tools behind an Identity & Policy Gateway.
+At Limina Labs (CoreOS/OpenClaw), we discarded the amateur approach of LLM-to-CLI execution. Enterprise scale requires Native OAPI Tools sitting behind a strict Identity & Policy Gateway.
 
-1. **Decoupled Token Management**: Tools are hardcoded at the gateway level. The LLM passes business parameters and never touches API tokens.
-2. **Context-Based Routing**: When an LLM triggers an action, the daemon intercepts the `SenderId` from the context. The Auth Store injects the specific user's OAuth Token milliseconds before the HTTP request. Contexts remain physically isolated.
-3. **Physical Approval Hooks**: High-risk writes are suspended at the base layer. The gateway pushes a strict Approve/Deny prompt to the user's device, mechanically blocking LLM hallucinations.
+The mandatory architectural standard:
+
+1. **Physical Token Decoupling**: Operational tools are hardcoded native functions. The LLM processes business arguments but is physically barred from accessing real API tokens.
+2. **Context-Based Identity Routing**: The daemon intercepts the `SenderId` from the active message context. Milliseconds before the HTTP request fires, the Auth Store dynamically injects that specific user's OAuth User Access Token. Tenancy contexts remain physically isolated.
+3. **Approval Hooks**: For any privilege escalation or destructive write operation, the gateway suspends the request at the base layer and pushes a mechanical Approve/Deny prompt to the human operator. Hallucination chains are severed mechanically.
 
 ## Conclusion
 
-Letting LLMs call CLIs is single-player roleplay. Abandon the obsession with autonomous LLM reasoning. Without hardcoded DAGs and strict multi-tenant auth gateways, execution layer revolutions are illusions. Real enterprise AI relies on strict permission isolation, concurrency control, and rigid state machines.
-
----
-
-# 🇨🇳 中文版本: 别拿单机玩具忽悠企业：Agent 的“CLI 革命”是个伪命题
-
-**Date**: 2026-04-06
-**Author**: Limina Labs (Limina Engineering)
-
-最近炒作《四家平台同时给Agent开了CLI‘后门’》的营销文纯属垃圾。文章吹捧飞书、钉钉的 CLI 是“执行层革命”，以为让大模型敲命令行就能解决企业自动化。
-
-任何在生产环境待过的架构师看这种设计，评价只有一个：玩具。
-
-把原生 CLI 直接扔给大模型，在 ToB 多租户场景下解决不了业务痛点，只会是一颗随时引爆的数据越权定时炸弹。
-
-## 1. Token 浪费与错误复利
-
-Demo 里大模型靠 ReAct 推理玩转 CLI。工程现实是：90% 的 Token 和时间全浪费在让模型现场摸索工具上。
-
-把高度泛化的 CLI 丢给模型，必然遇到参数缺失或语法错误。结果就是无尽的 HTTP 400 死循环，甚至执行破坏性命令。
-
-错误复利更致命。大模型基于幻觉写入错误数据，迅速污染整条自动化链条。指望大模型在开放 CLI 上跑通复杂业务流，是极端的工程渎职。
-
-**现实解法**：生产级工作流必须用 LangGraph 或固定 SOP 锁死为硬编码 DAG。大模型只能在隔离节点做非结构化数据提取，剥夺其底层编排控制权。
-
-## 2. 多租户状态污染
-
-CLI 工具从基因上就是单机版。可执行文件（如 `lark-cli`）依赖全局配置（`~/.lark-cli-config`）或环境变量。
-
-把它扔进 50 人企业群，员工 A 和 B 同时查询涉密项目，Agent 用谁的身份？
-
-用全局 Admin Token，权限瞬间崩溃，直接数据泄露。高并发下动态改写环境变量切 Token，必然引发多线程状态污染（Race Conditions）。没有多租户动态鉴权隔离的 Agent 工具链，全都是玩具。
-
-## 3. 原生工具与鉴权网关
-
-在 CoreOS/OpenClaw 架构中，我们彻底干掉“大模型调 CLI”的业余做法，采用 Native OAPI Tools + 身份与策略网关。
-
-1. **剥离 Token**：操作工具写死在底层网关。大模型只传业务参数，绝对不碰 API Token。
-2. **动态身份路由**：网关拦截消息上下文中的 `SenderId`。通过 Auth Store，在发 HTTP 请求前一毫秒动态注入对应用户的 OAuth Token。物理隔离上下文。
-3. **物理审批门禁**：所有高危写操作在底层强制挂起，推送到用户的物理设备进行 Approve/Deny 确认。从机制上物理掐断大模型暴走。
-
-## 结语
-
-“大模型调 CLI”只是基础设施残缺时的单机过家家。抛弃对大模型自主推理的迷信。没有硬编码的 DAG 锁死流程，没有多租户动态鉴权网关，执行层革命就是扯淡。企业 AI 的核心是枯燥的权限隔离、并发控制和严密的状态机管理。
+The obsession with autonomous LLM reasoning via CLI is amateur roleplay. Real enterprise AI lives in the unforgiving domains of strict permission isolation, concurrency control, and rigid state machine management. Without hardcoded DAGs and a multi-tenant authentication gateway, there is no revolution. Stop shipping toys.
