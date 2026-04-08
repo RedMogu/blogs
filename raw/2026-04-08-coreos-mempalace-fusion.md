@@ -168,3 +168,25 @@ Obsidian 的 obsidian-livesync 插件正是重度依赖了这套协议：
 我们废弃了对 CouchDB 的反向劫持，回归最纯粹的 Unix 哲学。
 在用户的 Mac 或 Gateway 节点上，配置一段基于 rsync 的 sync_vault.sh 脚本。
 该脚本通过物理级拷贝，直接将 Markdown 文件秒级镜像到 Dash 节点的 /data/claw/private-wiki/，并完美规避 .obsidian 缓存。随后触发 pure_ingest.js 的 Inode 极速对账，实现真正意义上 0 解析损耗的端到端 RAG 同步！
+## 17. 动态房间的生命周期：随生随灭 (Ephemeral Architecture)
+在 Tag-as-Room 与 Hardlink 的组合架构下，房间的生命周期实现了真正的 **“所见即所得”**。
+
+**传统的困境：**
+一旦在系统中通过 LLM 或者代码生成了一个分类（Category / Room），即使里面所有的文档都被删除了，这个分类本身往往还会作为一个空的“幽灵文件夹”或“元数据标签”残留在数据库中。这种“元数据蔓延”会导致大模型的选项越来越多，噪音越来越大。
+
+**我们的破局方案：**
+1. **每日“核平”重构 (The Nightly Nuke)**：
+   每天凌晨 2:50，`mem-librarian` 脚本的第一行代码就是 `rm -rf ~/.openclaw/virtual_palace/`。它无情地抹除昨日建立的所有虚拟宫殿和硬链接，不留任何历史包袱。
+   然后，它仅基于**当前时刻**的 Markdown 文件内的 `#Tags` 和父文件夹名，重新使用 `ln` 指令铺设虚拟房间。
+   **推论：** 如果您今天把所有日记里的 `#Kami-Vision` 标签都删除了，今晚重构时，虚拟宫殿里就绝对不会再创建出 `Kami-Vision` 这个硬链接子目录。
+
+2. **极速对账的超度 (The Inode Reconciliation)**：
+   每天凌晨 3:00，`pure_ingest.js` 进行扫描。当它发现由于昨天某个标签（硬链接）消失了，导致它记录在 `coreos_sync_state.json` 里的某个路径在今天“不见了”，它会立刻触发服务端的 `/delete` 接口，顺着文件路径把旧的 Vector（向量）和 Neo4j 图谱节点**连根拔起，当场超度**。
+
+3. **所见即所得的房间清单 (List-Rooms)**：
+   `mem-list-rooms` 工具并不是读取配置文件，而是直接调用 Qdrant 原生接口对前 10,000 个向量做了一次 `rooms` 字段聚合 (`Set` 去重)。
+   当最后一条挂着 `#Kami-Vision` 的向量被 `/delete` 超度后，这个 Room 在数据库里就随之灰飞烟灭了。当大模型再次调用 `list_rooms` 时，它就不可能再看到这个空房间。
+
+**总结：标签即房间。**
+有内容，房间拔地而起；没内容，房间烟消云散。
+这是一种绝对弹性的认知架构，它保障了无论用户的兴趣如何迁移，系统的导航地图永远精确地反映当前脑海里最活跃的领域。
