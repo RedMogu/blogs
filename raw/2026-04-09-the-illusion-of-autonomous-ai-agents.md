@@ -42,6 +42,15 @@ When you build your entire startup around a shiny new Agent Framework that promi
 
 If the LLM decides to overwrite your critical `SKILL.md` file because it hallucinated a "better" workflow, your agent doesn't "evolve"—it breaks.
 
+
+### The Manual vs. The Engine
+
+This brings us to the core issue. For a Large Language Model, a text file is simply an instruction manual. 
+
+*A text file is an instruction manual. Without a deterministic execution engine, you are just handing a manual to an unpredictable, hallucination-prone intern and hoping for the best.*
+
+They expect the model to read a Markdown file and execute a 15-step API sequence perfectly every single time. Anyone who has deployed LLMs to production knows this is naive. The model will eventually drift, skip steps, or invent synthetic tool endpoints.
+
 ### The CoreOS Philosophy: Determinism > Hallucination
 
 At Limina Labs, we abandoned the "let the AI figure it out" approach a long time ago. We rely on what we call **CoreOS**. 
