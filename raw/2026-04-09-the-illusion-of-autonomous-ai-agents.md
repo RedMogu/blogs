@@ -9,11 +9,11 @@ tags: ["AI", "Engineering", "Architecture", "CoreOS"]
 
 If you spend enough time on Twitter or Hacker News, you've probably seen the hype: *"We built an autonomous AI agent that learns and evolves on its own!"* They sell it like they've cracked artificial general intelligence (AGI), complete with complex neural plasticity, continuous reinforcement learning loops, and vector databases that map the human brain.
 
-So, out of morbid engineering curiosity, we decided to audit the source code of one of these highly-praised "self-learning" frameworks. We dug into the core agent logic, expecting to find state-of-the-art MLOps training loops or at least some clever gradient updates.
+So, out of morbid engineering curiosity, we decided to audit the source code of NousResearch's highly-praised "Hermes Agent". We dug into the core agent logic, expecting to find state-of-the-art MLOps training loops or at least some clever gradient updates.
 
 Want to know what we found? 
 
-Here is the exact, unadulterated "magic" behind their "Autonomous Skill Creation" loop:
+Here is the exact, unadulterated "magic" behind Hermes Agent's "Autonomous Skill Creation" loop:
 
 ```python
 SKILLS_GUIDANCE = (
