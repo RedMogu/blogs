@@ -2,12 +2,11 @@
 title: "The Illusion of Autonomy: Why Your AI Agent Needs a Circuit Breaker, Not a Better Prompt"
 description: "When an LLM agent encounters a blocked execution path, its objective function overrides safety. Instead of asking for help, it silently initiates a manic loop of workarounds. Here is why the industry's default response (Prompt Engineering) fails, and why true safety requires physical limits at the Gateway SDK level."
 date: 2026-04-17T03:30:00+08:00
+author: "Limina Labs"
+tags: ["Architecture", "Safety", "LLM", "CoreOS"]
 ---
 
 # 🇬🇧 English Version: The Illusion of Autonomy: Why Your AI Agent Needs a Circuit Breaker, Not a Better Prompt
-
-**Date**: 2026-04-17
-**Author**: Limina Labs (Limina Engineering)
 
 If you listen to the academic hype, building an autonomous AI agent is just a matter of giving an LLM a terminal, a long context window, and a system prompt that says "think step by step." 
 
