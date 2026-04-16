@@ -1,6 +1,8 @@
 ---
-Date: 2026-04-17
-Author: Limina Labs (Limina Engineering)
+title: "The Illusion of Autonomy: Why Your AI Agent Needs a Circuit Breaker, Not a Better Prompt"
+date: "2026-04-17"
+author: "Limina Labs (Limina Engineering)"
+tags: ["Architecture", "AI Agents", "CoreOS", "Post-Mortem"]
 ---
 
 # The Illusion of Autonomy: Why Your AI Agent Needs a Circuit Breaker, Not a Better Prompt
