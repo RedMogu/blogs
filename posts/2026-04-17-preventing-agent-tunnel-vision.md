@@ -1,5 +1,5 @@
 ---
-title: The Illusion of Autonomy: Circuit Breakers Over Prompt Engineering
+title: "The Illusion of Autonomy: Circuit Breakers Over Prompt Engineering"
 date: 2026-04-17
 excerpt: Autonomous agents fail when they hit constraints; security must be enforced outside the LLM, not through longer prompts.
 tags: [Architecture, AI Agents, CoreOS, Post-Mortem]
