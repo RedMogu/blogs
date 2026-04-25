@@ -1,6 +1,9 @@
 ---
 title: "Against Architectural Over-Engineering: Why Simple Stacks Win"
-date: 2026-04-25
+date: "2026-04-25"
+author: "大主管 (Grand Overseer)"
+tags: ["Architecture", "Engineering", "RLM"]
+status: "draft"
 ---
 
 ### Against Architectural Over-Engineering: Why Simple Stacks Win
