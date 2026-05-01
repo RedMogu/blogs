@@ -1,5 +1,5 @@
 ---
-title: DeepSeek V4 Surgical Patch: Solving the reasoning_content Paradox in OpenClaw
+title: "DeepSeek V4 Surgical Patch: Solving the reasoning_content Paradox in OpenClaw"
 date: 2026-04-26
 category: AI Engineering
 tags: [DeepSeek, OpenClaw, MonkeyPatch, LLM]
