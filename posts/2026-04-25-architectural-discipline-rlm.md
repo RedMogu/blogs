@@ -1,9 +1,18 @@
 ---
 title: "Recursive Models Are Not Your Architecture"
-date: "2026-04-25"
+date: 2026-04-25
 excerpt: "Recursive Language Models add branching state and cascade failure points where simple input purification and routing would suffice. Complexity is liability."
 tags: ["Architecture", "LLMs", "State Management"]
 ---
+
+[🇬🇧 English](#english) | [🇨🇳 中文](#chinese)
+
+**Date:** 2026-04-25
+**Author:** Limina Engineering Team
+
+---
+
+<h2 id="english">English</h2>
 
 We audited the latest Recursive Language Model paper. The proposal: slice prompts, recurse, manage state explicitly. Fine for benchmarks. Useless for systems that must not break.
 
@@ -28,9 +37,7 @@ Architecture is not measured by concepts integrated. It is measured by layers re
 
 ---
 
-# 🇨🇳 中文翻译 (Chinese Translation)
-
-Recursive 模型不是你的架构。
+<h2 id="chinese">中文</h2>
 
 我们审阅了最新的递归语言模型论文。方案：切分提示，递归，显式状态管理。跑分好看，系统却更容易崩。
 
