@@ -1,52 +1,52 @@
 ---
-title: "Understanding the Agent Client Protocol (ACP) in Distributed OpenClaw Deployments"
+title: "Understanding the Agent Client Protocol (ACP) in Distributed AI Coding Environments"
 date: "2026-05-09"
 author: "Jesse"
-tags: ["Architecture", "Agent Client Protocol", "OpenClaw", "OpenCode", "Distributed Systems"]
+tags: ["Architecture", "Agent Client Protocol", "AI Coding", "OpenCode", "Distributed Systems"]
 status: "draft"
 ---
 
-# Understanding the Agent Client Protocol (ACP) in Distributed OpenClaw Deployments
+# Understanding the Agent Client Protocol (ACP) in Distributed AI Coding Environments
 
-When building distributed AI agent architectures, achieving seamless file-system context and strict memory isolation becomes paramount. In this post, we analyze a common architectural pitfall involving the **Agent Client Protocol (ACP)** and detail how we resolved it by deploying a distributed sub-agent in OpenClaw.
+When building distributed AI agent architectures, achieving seamless file-system context and strict memory isolation becomes paramount. In this post, we analyze a common architectural pitfall involving the **Agent Client Protocol (ACP)** and detail how to properly integrate local coding agents into a distributed orchestration framework.
 
 ## The Problem: The Need for Seamless Context
 
-In our architecture, the **Main Gateway** (where the orchestrator agent resides) is decoupled from the **Execution Node** (where the code repository and `OpenCode` runner live). 
+In advanced AI orchestration, the **Orchestrator** (the central logic framework managing tasks) is often physically decoupled from the **Execution Node** (where the actual code repository and specialized coding agents live). 
 
-We wanted the orchestrator to "take over" the remote OpenCode environment to maintain a clean AST/file-system context without blowing up the primary LLM's context window. We attempted to bind OpenClaw's `acpx` plugin (acting as an ACP Client) to a remote OpenCode process over a TCP port (`--port 18901`).
+We wanted the remote orchestrator to "take over" the remote coding environment to maintain a clean AST/file-system context. The initial, flawed approach was to expose the remote coding agent's ACP server over a public or internal TCP network port, expecting the orchestrator to connect and issue remote procedure calls (RPC).
 
 ## The Protocol Mismatch: Stdio vs. Network Sockets
 
-The connection immediately failed, returning an HTML Web UI instead of a JSON-RPC upgrade. The root cause lay in a fundamental misunderstanding of the ACP specification.
+The connection immediately failed. The root cause lay in a fundamental misunderstanding of the ACP specification's transport layer.
 
-The **Agent Client Protocol (ACP)** is an open standard designed to decouple IDEs (like Zed, JetBrains, or Neovim) from AI backend runners (like OpenCode or Claude Code). 
+The **Agent Client Protocol (ACP)** is an open standard designed to decouple IDEs (like Zed, JetBrains, or Neovim) from AI backend runners. 
 
-By design, the ACP specification relies on **Standard Input/Output (`stdio`)** to transmit JSON-RPC messages. It is built to facilitate parent-child process communication on a local machine, not to be routed across public or private networks via TCP sockets. When we forced the OpenCode ACP server to bind to a network port, it fell back to serving its default Web UI.
+By design, the ACP specification relies heavily on **Standard Input/Output (`stdio`)** to transmit JSON-RPC messages. It is built to facilitate parent-child process communication on a single, local machine, not to be routed across networks via TCP sockets. When forced to bind to a network port, backend coding agents often lack the logic to handle network-based RPC handshakes, sometimes falling back to serving debug Web UIs or dropping the connection entirely.
 
-- **The Client**: OpenClaw's `acpx` plugin.
-- **The Server**: OpenCode (`opencode acp`).
+- **The Client**: The Orchestrator's internal plugin.
+- **The Server**: The specialized coding agent backend (e.g., OpenCode, Claude Code).
 - **The Constraint**: Both must exist on the exact same physical node to establish the `stdio` pipeline.
 
 ## The Solution: Distributed Agent Deployment
 
-Because native ACP requires a local process boundary, "remote control" via ACP network tunnels is an anti-pattern. We rejected the compromise of using brittle HTTP "controller" skills (which lose critical execution output) and instead leaned into OpenClaw's distributed node capabilities.
+Because native ACP requires a local process boundary, "remote control" via ACP network tunnels is an anti-pattern. Attempting to bridge this gap with brittle HTTP wrappers or SSH-based command wrappers results in severe information loss, preventing the orchestrator from capturing real-time terminal output and granular file changes.
 
 The correct architectural pattern is **Physical Agent Deployment on the Execution Node**:
 
-1. **Deploy the Agent Locally**: We spin up the `dev-cat` daemon directly on the execution node (`100.119.190.117`).
-2. **Network Routing**: The Main Gateway (`100.93.80.61`) simply routes the user's chat messages across the Tailscale network to the `dev-cat` process.
-3. **Local ACP Hook**: The `dev-cat` agent, now physically residing alongside the code, uses the `acpx` plugin to spawn `opencode acp` as a local child process. The `stdio` JSON-RPC connection succeeds instantly.
-4. **LLM Invocation**: The local agent process reaches out to the centralized LLM inference server (e.g., DeepSeek/Gemini via LiteLLM) to perform the reasoning.
+1. **Deploy the Orchestrator Client Locally**: Instead of keeping the orchestrator strictly on a central server, spin up a local daemon instance of the orchestrator directly on the execution node.
+2. **Network Routing at the Orchestration Layer**: The central gateway system simply routes task payloads across the internal network (e.g., VPN or Tailscale) to the local orchestrator daemon.
+3. **Local ACP Hook**: The local orchestrator, now physically residing alongside the code, spawns the specialized coding agent as a local child process. The `stdio` JSON-RPC connection succeeds instantly.
+4. **LLM Invocation**: The local orchestrator process reaches out to centralized LLM inference APIs (e.g., OpenAI, Anthropic, or local inferencing clusters) to perform reasoning, acting as the brain for the local hands.
 
 ### Architectural Benefits
 
 This distributed approach yields three critical advantages:
 
-1. **Short-Term Memory Isolation**: The `dev-cat` agent maintains its own session files (`.jsonl`) locally on the execution node. The developer's idle chatter on the Main Gateway never pollutes the coding agent's context.
-2. **Perfect ACP Compliance**: By respecting the `stdio` constraint of the Agent Client Protocol, we avoid network unreliability and brittle Web API wrappers.
-3. **Global Knowledge Access**: Both the Main Gateway and the remote `dev-cat` agent share the same TiDB Vector database (`mem-local` plugin) for long-term memory retrieval, ensuring the decentralized agents remain strategically aligned.
+1. **Memory Isolation**: The local coding daemon maintains its own contextual session files strictly on the execution node. The developer's general chatter or unrelated system tasks on the central gateway never pollute the coding agent's context.
+2. **Perfect ACP Compliance**: By respecting the `stdio` constraint of the Agent Client Protocol, we avoid network unreliability and protocol violations, unlocking the full potential of native IDE-agent communication.
+3. **True Autonomy**: The coding agent can execute complex, multi-step refactoring loops (edit -> test -> fix) locally, only returning the final diff or success state back across the network to the central orchestrator.
 
 ## Conclusion
 
-When integrating ACP-compliant tools like OpenCode or Claude Code into an orchestrator framework, respect the protocol's physical boundaries. Do not attempt to pipe `stdio` RPC commands over the network. Instead, push the agent process to the edge where the code lives, and let your central gateway handle the message routing.
+When integrating ACP-compliant tools into a broader AI orchestrator framework, respect the protocol's physical boundaries. Do not attempt to pipe `stdio` RPC commands over the network. Instead, push the orchestration client to the edge where the code lives, and let your central systems handle high-level message routing.
