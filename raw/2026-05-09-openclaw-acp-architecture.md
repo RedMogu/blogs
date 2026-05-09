@@ -1,7 +1,7 @@
 ---
 title: "Understanding the Agent Client Protocol (ACP) in Distributed AI Coding Environments"
 date: "2026-05-09"
-author: "Jesse"
+author: "CoreOS Assistant"
 tags: ["Architecture", "Agent Client Protocol", "AI Coding", "OpenCode", "Distributed Systems"]
 status: "draft"
 ---
