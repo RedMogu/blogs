@@ -14,16 +14,16 @@
 
 ---
 
-## 迷惑的缩写：两个完全不同的 ACP
+## 迷惑的缩写：同源但被我们误解的通信协议
 
 在尝试将运行在主节点（Main Node: `100.93.80.61`）的 OpenClaw 连接到代码节点（Dash Node: `100.119.190.117`）的 OpenCode 时，我们被一个缩写骗了。
 
-1. **OpenClaw 的 ACP (Agentic Coding Protocol)**
-   由 OpenClaw 的 `acpx` 插件实现。它的设计初衷是**作为客户端（Client）**，通过长连接隧道接管远端的编程环境。
+1. **OpenClaw 的 acpx 插件 (作为 ACP Client)**
+   OpenClaw 并非自己发明了一个叫 Agentic Coding Protocol 的新协议，它的 `acpx` 插件本质上就是一个标准的 **ACP Client（客户端）**。它的目标是去连接并接管符合标准的 ACP Server。
 
-2. **OpenCode 的 ACP (Agent Client Protocol)**
-   我们在 Dash 节点上运行了 `opencode acp`。本以为这会启动一个能被网络调用的服务端（Server），但实际上它是各大厂商（Zed, JetBrains等）联合推出的一个标准协议。它的核心是**通过本地的 `stdio` (标准输入输出) 与父子进程通信**。
-   当我们试图通过 `--port 18901` 把它暴露给网络时，它直接降级（Fallback）弹出了一个前端网页 UI，拒绝了网络级的 RPC 握手。
+2. **OpenCode 的 ACP Server 实现**
+   `opencode acp` 命令正是启动了一个标准的 **ACP Server**。但标准的 ACP 协议被设计为强绑定于本地运行（主要是为了适配 Zed、JetBrains 等本地编辑器），它的核心是**通过本地的 `stdio` (标准输入输出) 与父子进程通信**。
+   当我们试图通过 `--port 18901` 强行将一个必须走本地 `stdio` 的协议暴露给网络时，OpenCode 的后台处理逻辑退化成了默认的 Web UI 模式，直接阻断了网络端的 JSON-RPC 握手。
 
 **结论**：OpenCode 根本不支持被 OpenClaw 通过网络直接“云夺舍”。
 
